@@ -4,7 +4,7 @@ import createAndSetToken from "../utils/createAndSetToken.js";
 
 export const signup = async (req, res) => {
   try {
-    const { username, fullname, email, password } = req.body;
+    const { username, fullname, email, password, question, answer } = req.body;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -28,6 +28,9 @@ export const signup = async (req, res) => {
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedAnswer = await bcrypt.hash(answer.toLowerCase(), salt);
+
+    const securityQuestion = { question, answer: hashedAnswer };
 
     // Store hashed password in the database
     const newUser = new User({
@@ -35,21 +38,15 @@ export const signup = async (req, res) => {
       fullname,
       email,
       password: hashedPassword,
+      securityQuestion,
     });
     if (newUser) {
       createAndSetToken(newUser._id, res);
       await newUser.save();
 
-      res.status(201).json({
-        _id: newUser._id,
-        fullname: newUser.fullname,
-        username: newUser.username,
-        email: newUser.email,
-        followers: newUser.followers,
-        following: newUser.following,
-        profileImg: newUser.profileImg,
-        coverImg: newUser.coverImg,
-      });
+      newUser.password = null;
+      newUser.securityQuestion.answer = null;
+      res.status(201).json({ newUser });
     }
   } catch (error) {
     console.log("Error in signup", error.message);
@@ -59,7 +56,7 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, answer } = req.body;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -96,7 +93,9 @@ export const logout = async (req, res) => {
 
 export const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
+    const user = await User.findById(req.user._id).select(
+      "-password -securityQuestion.answer"
+    );
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -104,6 +103,53 @@ export const getCurrentUser = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     console.log("Error in getCurrentUser", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { answer, email, newPassword } = req.body;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res
+        .status(401)
+        .json({ error: "Incorrect Email or Security Answer" });
+    }
+
+    const isAnswerCorrect = await bcrypt.compare(
+      answer.toLowerCase(),
+      user.securityQuestion.answer
+    );
+    if (!isAnswerCorrect) {
+      return res
+        .status(401)
+        .json({ error: "Incorrect Email or Security Answer" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: user._id },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (updatedUser) {
+      createAndSetToken(updatedUser._id, res);
+      updatedUser.password = null;
+      updatedUser.securityQuestion.answer = null;
+      res.status(200).json(updatedUser);
+    }
+  } catch (error) {
+    console.log("Error in Forgot password", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
