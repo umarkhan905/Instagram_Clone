@@ -35,7 +35,8 @@ const userSchema = new Schema(
         default: [],
       },
     ],
-    likes: [],
+    likedPosts: [],
+    drafts: [],
     coverImg: {
       type: String,
       default: "",
@@ -45,7 +46,36 @@ const userSchema = new Schema(
       default: "",
     },
     bio: String,
-    link: String,
+    links: [
+      {
+        title: {
+          type: String,
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+    isBlueTick: {
+      type: Boolean,
+      default: false,
+    },
+    securityQuestion: {
+      question: {
+        type: String,
+        required: true,
+      },
+      answer: {
+        type: String,
+        required: true,
+      },
+    },
   },
   { timestamps: true }
 );
