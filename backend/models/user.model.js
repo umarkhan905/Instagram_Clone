@@ -35,8 +35,27 @@ const userSchema = new Schema(
         default: [],
       },
     ],
-    likedPosts: [],
-    drafts: [],
+    likedPosts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: [],
+      },
+    ],
+    drafts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: [],
+      },
+    ],
+    savedPosts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: [],
+      },
+    ],
     coverImg: {
       type: String,
       default: "",

@@ -30,7 +30,10 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     const hashedAnswer = await bcrypt.hash(answer.toLowerCase(), salt);
 
-    const securityQuestion = { question, answer: hashedAnswer };
+    const securityQuestion = {
+      question: question.toLowerCase(),
+      answer: hashedAnswer,
+    };
 
     // Store hashed password in the database
     const newUser = new User({
@@ -46,7 +49,7 @@ export const signup = async (req, res) => {
 
       newUser.password = null;
       newUser.securityQuestion.answer = null;
-      res.status(201).json({ newUser });
+      res.status(201).json(newUser);
     }
   } catch (error) {
     console.log("Error in signup", error.message);
@@ -107,9 +110,9 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
-export const forgotPassword = async (req, res) => {
+export const verifyUser = async (req, res) => {
   try {
-    const { answer, email, newPassword } = req.body;
+    const { email } = req.body;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -120,7 +123,24 @@ export const forgotPassword = async (req, res) => {
     if (!user) {
       return res
         .status(401)
-        .json({ error: "Incorrect Email or Security Answer" });
+        .json({ error: "Incorrect Email or Security Question" });
+    }
+    res
+      .status(200)
+      .json({ question: user.securityQuestion.question, email: user.email });
+  } catch (error) {
+    console.log("Error in Forgot password", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { answer, email, newPassword } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
     }
 
     const isAnswerCorrect = await bcrypt.compare(
@@ -128,9 +148,7 @@ export const forgotPassword = async (req, res) => {
       user.securityQuestion.answer
     );
     if (!isAnswerCorrect) {
-      return res
-        .status(401)
-        .json({ error: "Incorrect Email or Security Answer" });
+      return res.status(401).json({ error: "Incorrect Security Answer" });
     }
 
     const salt = await bcrypt.genSalt(10);
