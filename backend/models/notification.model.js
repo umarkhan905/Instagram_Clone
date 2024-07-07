@@ -17,6 +17,10 @@ const userSchema = new Schema(
       enum: ["FOLLOW", "COMMENT", "LIKE"],
       required: true,
     },
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
