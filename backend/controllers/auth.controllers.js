@@ -28,10 +28,10 @@ export const signup = async (req, res) => {
     }
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    const hashedAnswer = await bcrypt.hash(answer.toLowerCase(), salt);
+    const hashedAnswer = await bcrypt.hash(answer, salt);
 
     const securityQuestion = {
-      question: question.toLowerCase(),
+      question: question,
       answer: hashedAnswer,
     };
 
@@ -86,7 +86,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token");
+    res.clearCookie("jwt");
     res.json({ message: "User Logged out successfully" });
   } catch (error) {
     console.log("Error in logout", error.message);
@@ -121,9 +121,7 @@ export const verifyUser = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res
-        .status(401)
-        .json({ error: "Incorrect Email or Security Question" });
+      return res.status(401).json({ error: "User not found!" });
     }
     res
       .status(200)
@@ -144,7 +142,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     const isAnswerCorrect = await bcrypt.compare(
-      answer.toLowerCase(),
+      answer,
       user.securityQuestion.answer
     );
     if (!isAnswerCorrect) {
@@ -154,18 +152,13 @@ export const forgotPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: user._id },
-      { password: hashedPassword },
-      { new: true }
-    );
+    user.password = hashedPassword;
+    createAndSetToken(user._id, res);
+    await user.save();
 
-    if (updatedUser) {
-      createAndSetToken(updatedUser._id, res);
-      updatedUser.password = null;
-      updatedUser.securityQuestion.answer = null;
-      res.status(200).json(updatedUser);
-    }
+    user.password = null;
+    user.securityQuestion.answer = null;
+    res.status(200).json(user);
   } catch (error) {
     console.log("Error in Forgot password", error.message);
     res.status(500).json({ error: "Internal Server Error" });

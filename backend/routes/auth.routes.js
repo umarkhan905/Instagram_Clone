@@ -15,7 +15,7 @@ router.get("/me", protectRoutes, getCurrentUser);
 router.post("/signup", signup);
 router.post("/login", login);
 router.post("/logout", logout);
-router.get("/verify", verifyUser);
-router.patch("/forgot-password", forgotPassword);
+router.post("/verify", verifyUser);
+router.patch("/reset-password", forgotPassword);
 
 export default router;
