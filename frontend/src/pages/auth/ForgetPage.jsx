@@ -57,7 +57,7 @@ const ForgetPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    isVerify ? resetPassword(formData) : verifyUser(formData.email);
+    isVerify ? resetPassword() : verifyUser();
   };
   return (
     <div className="dark:text-[#f5f5f5] ">
@@ -86,7 +86,7 @@ const ForgetPage = () => {
               className="block w-96 mx-auto mb-2 px-2 py-[5px] outline-none bg-[#f2f2f2] rounded-sm placeholder:text-gray-400 dark:bg-[#252525] dark:text-[#f2f2f2]"
               type="email"
               name="email"
-              value={isVerify ? securityQuestion.email : formData.email}
+              value={isVerify ? securityQuestion?.email : formData.email}
               onChange={handleChange}
               placeholder="Email"
             />
@@ -121,12 +121,17 @@ const ForgetPage = () => {
                 placeholder="New password"
               />
             )}
-            {error ||
-              (isError && (
-                <div className="text-red-500 ml-2 text-[12px] font-[400]">
-                  **{error?.message || isError?.message}
-                </div>
-              ))}
+            {error && (
+              <div className="text-red-500 ml-2 text-[12px] font-[400]">
+                **{error?.message}
+              </div>
+            )}
+            {isError && (
+              <div className="text-red-500 ml-2 text-[12px] font-[400]">
+                **{isError?.message}
+              </div>
+            )}
+
             <button className="block w-96 mx-auto px-2 py-[6px] outline-none bg-[#3797EF] text-white rounded-md hover:bg-[#4fabf1] transition-colors mt-2 mb-1">
               {isPending || isLoading ? (
                 <LoadingSpinner className={"w-5 h-5 mx-auto"} />

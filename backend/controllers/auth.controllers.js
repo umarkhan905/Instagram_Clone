@@ -148,6 +148,11 @@ export const forgotPassword = async (req, res) => {
     if (!isAnswerCorrect) {
       return res.status(401).json({ error: "Incorrect Security Answer" });
     }
+    if (newPassword.length < 8) {
+      return res
+        .status(400)
+        .json({ error: "Password length must be at least 8 characters" });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
